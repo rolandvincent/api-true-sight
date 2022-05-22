@@ -61,6 +61,12 @@ Not sure, because we always got lot of discount here... and it may different wit
 Why cloud run price is $0 ??
 => https://cloud.google.com/run/pricing#billable_time
 
+```
+TLDR
+
+If API/web traffic is not exceed specific amount we won't charged, that's why we choose cloud run
+```
+
 Why cloud SQL have highest cost ??
 => Of course it run 24/7
 
