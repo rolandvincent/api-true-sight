@@ -77,7 +77,7 @@ Total cost Rp959,217.58 / month
 GCP Trial account credit is $300 we can keep all service running around 3 month++
 
 ## Role IAM
-We think everyone can join in this GCP and explore all things here with editor role, we can invite everyone with team email addresses
+We think everyone can join in this GCP and explore all things here with editor/owner role, we can invite everyone with team email addresses
 
 # API Development
 
