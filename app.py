@@ -3,11 +3,13 @@ from dotenv import load_dotenv
 from flask_bcrypt import Bcrypt
 from flask import Flask, request
 from flask import jsonify
-import os
-import string
 from models.User import User
+from models.Claim import Claim
 from database import Database
 from datetime import datetime
+from TrueSightEngine import SearchEngine
+import os
+import string
 
 load_dotenv()
 
@@ -51,8 +53,26 @@ def api_res(status: str, message: str, source: str, total: int, dataname: str, d
 random = Random()
 
 
+def isValidApiKey(api_key: str) -> bool:
+    result = db.get_where('api_session', {'api_key': api_key})
+    if (len(result) > 0):
+        return True
+    return False
+
+
+def getUserFromApiKey(api_key: str) -> User:
+    if api_key is None:
+        return None
+    result = db.get_where('api_session', {'api_key': api_key})
+    if (len(result) > 0):
+        user = User.parse(db.get_where(
+            'users', {'id': result[0][2]})[0])
+        return user
+    return None
+
+
 def generate_key(length):
-    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(length))
+    return ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(length))
 
 
 @app.route("/")
@@ -70,13 +90,13 @@ def api():
         if data['type'] == 'auth':
             user = db.get_where(
                 'users', {'username': data['username']})
+
             if len(user) > 0:
-                print(user[0])
                 user = User.parse(user[0])
-                print(user.password)
                 if bcrypt.check_password_hash(user.password, data['password']):
                     query_api = db.get_where(
                         'api_session', {'user_id': user.id})
+
                     if len(query_api) > 0:
                         return jsonify(api_res('success', '', 'Auth', 0, 'ApiKey', query_api[0][1]))
 
@@ -94,31 +114,35 @@ def api():
             ).get())
             user = User.parse(db.get_where(
                 'users', {'username': data['username']})[0])
+
             api_key = generate_key(64)
+
             db.insert('api_session', {
                 'api_key': api_key, 'user_id': user.id, 'expired': 0})
 
             return jsonify(api_res('success', 'User added', 'Registration', 0, '', {}))
 
-        if data['type'] == 'query':
-            if len(db.get_where(
-                    'users', {'username': data['username']})) > 0:
-                return jsonify(api_res('failed', 'Username already exist', 'Reg', 0, '', {}))
+        if data['type'] == 'search':
+            if isValidApiKey(request.headers.get('x-api-key', None)):
+                claims = {}
+                data = dict(data)
 
-            db.insert('users', User().set(
-                None,
-                data['username'],
-                data['email'],
-                bcrypt.generate_password_hash(data['password']),
-                datetime.now().timestamp()
-            ).get())
-            user = User.parse(db.get_where(
-                'users', {'username': data['username']})[0])
-            api_key = generate_key(64)
-            db.insert('api_session', {
-                'api_key': api_key, 'user_id': user.id, 'expired': 0})
+                for _ in db.get('claims'):
+                    claim = Claim.parse(_).get()
+                    claims = SearchEngine.addDataToDictionary(claim, claims)
 
-            return jsonify(api_res('success', 'User added', 'Registration', 0, '', {}))
+                begin = data.get('begin', 0)
+                limit = data.get('limit', 99999)
+
+                if len(claims.values()) > 0:
+                    result = SearchEngine.search_from_dict(data['keyword'], claims, [
+                        'title', 'description'])
+                    return jsonify(api_res('success', 'User added', 'Search', len(result), data['keyword'], result[begin:begin+limit]))
+                else:
+                    return jsonify(api_res('success', 'User added', 'Search', len(result), data['keyword'], []))
+
+            else:
+                return jsonify(api_res('failed', 'Invalid token', 'Search', 0, '', {}))
 
         return jsonify(api_res('failed', 'Parameter incorrect', 'Api', 0, '', {}))
 
