@@ -20,6 +20,7 @@ Table of Contents
 # Resource
 
 ## Resource Plan
+- Cloud Build (free)
 - Cloud Storage
 - Cloud Run
 - Cloud SQL
@@ -40,7 +41,7 @@ from Cloud Run load model from Cloud Storage, connect to Cloud SQL, serve REST A
 ```
 
 ## Resource Diagram
-[Figma](https://www.figma.com/file/cY5UIJquC8AwRx6vQRNZeh/Untitled?node-id=0%3A1)
+[Diagram.pdf](https://raw.githubusercontent.com/C22-PS119/api-true-sight/main/GCP.pdf)
 
 # Organization Setup
 
